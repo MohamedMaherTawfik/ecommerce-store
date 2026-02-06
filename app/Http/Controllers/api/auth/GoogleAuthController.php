@@ -29,12 +29,12 @@ class GoogleAuthController extends Controller
                 [
                     'name' => $googleUser->getName(),
                     'password' => Hash::make('password'),
+                    'role' => 'user'
                 ]
             );
 
             $token = $user->createToken('auth_token')->plainTextToken;
-
-            return redirect()->to(env('FRONTEND_URL') . '/auth?token=' . $token);
+            return redirect()->to(env('FRONTEND_URL') . '/auth?token=' . $token . '&role=' . $user->role);
 
 
 

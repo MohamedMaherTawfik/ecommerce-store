@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Throwable;
@@ -90,7 +91,6 @@ class AuthController extends Controller
 
         return $this->success(['user' => new UserResource($user)], 'Profile fetched successfully.');
     }
-
     public function forgotPassword(Request $request)
     {
         $request->validate([
@@ -101,32 +101,37 @@ class AuthController extends Controller
 
         if (!$user) {
             return response()->json([
-                'message' => 'لو الإيميل موجود هيرجعلك لينك'
+                'message' => 'لو الإيميل موجود هيوصلك كود'
             ]);
         }
 
-        $token = Str::random(64);
+        $otp = rand(100000, 999999);
 
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $user->email],
             [
-                'token' => Hash::make($token),
+                'token' => Hash::make($otp),
                 'created_at' => now()
             ]
         );
 
+        Mail::raw("كود استرجاع كلمة المرور هو: $otp", function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject('Reset Password OTP');
+        });
+
         return response()->json([
-            'reset_link' => url('/reset-password') . "?email={$user->email}&token={$token}",
-            'token' => $token,
+            'message' => 'تم إرسال كود التحقق على الإيميل'
         ]);
     }
+
 
 
     public function resetPassword(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
-            'token' => 'required',
+            'otp' => 'required',
             'password' => 'required|confirmed|min:8',
         ]);
 
@@ -134,9 +139,9 @@ class AuthController extends Controller
             ->where('email', $request->email)
             ->first();
 
-        if (!$record || !Hash::check($request->token, $record->token)) {
+        if (!$record || !Hash::check($request->otp, $record->token)) {
             return response()->json([
-                'message' => 'Token غير صالح'
+                'message' => 'الكود غير صحيح'
             ], 400);
         }
 
@@ -152,6 +157,7 @@ class AuthController extends Controller
             'message' => 'تم تغيير كلمة المرور بنجاح'
         ]);
     }
+
 
     public function updateProfile(Request $request)
     {

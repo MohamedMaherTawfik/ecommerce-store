@@ -33,6 +33,7 @@
                                     Login
                                 </button>
                             </li>
+
                             <li class="nav-item text-center flex-grow-1">
                                 <button class="nav-link px-0 fs-5 fw-semibold position-relative"
                                     :class="{ 'active-tab': tab === 'register' }" @click.prevent="tab = 'register'">
@@ -72,11 +73,17 @@
                             :disabled="loading">
                             {{ loading ? 'Loading...' : 'Login' }}
                         </button>
+                        <p class="text-right">
+                            <a href="#" class="text-glow fw-medium fs-6" @click.prevent="tab = 'forgot'">
+                                هل نسيت كلمة المرور؟
+                            </a>
+                        </p>
 
-                        <p v-if="error" class="text-center text-danger text-sm mt-2">{{ error }}</p>
+
+                        <p v-if="error" class="text-center text-danger text-sm ">{{ error }}</p>
 
                         <!-- Google Login Button -->
-                        <div class="d-flex flex-column gap-3 mt-3">
+                        <div class="d-flex flex-column gap-3">
                             <button @click.prevent="handleGoogleLogin"
                                 class="btn btn-google btn-lg d-flex align-items-center justify-content-center gap-2">
                                 <img src="/images/google_logo.png" alt="Google Logo" style="width:36px; height:36px;">
@@ -132,6 +139,43 @@
                         </div>
                     </form>
 
+                    <form v-if="tab === 'forgot'" @submit.prevent="handleForgot" class="d-flex flex-column gap-4">
+
+                        <input v-model="forgotEmail" type="email"
+                            class="form-control form-control-lg glass-input rounded-3 py-3 px-4 fs-5"
+                            placeholder="Email Address" required>
+
+                        <button class="btn btn-glow btn-lg rounded-3 py-3 fw-bold fs-5">
+                            إرسال الكود
+                        </button>
+
+                        <p class="text-center">
+                            <a href="#" class="text-glow" @click.prevent="tab = 'login'">
+                                رجوع لتسجيل الدخول
+                            </a>
+                        </p>
+                    </form>
+
+                    <form v-if="tab === 'reset'" @submit.prevent="handleReset" class="d-flex flex-column gap-4">
+
+                        <input v-model="resetForm.email" type="email" class="form-control form-control-lg glass-input"
+                            placeholder="Email" required>
+
+                        <input v-model="resetForm.otp" type="text" class="form-control form-control-lg glass-input"
+                            placeholder="OTP Code" required>
+
+                        <input v-model="resetForm.password" type="password"
+                            class="form-control form-control-lg glass-input" placeholder="New Password" required>
+
+                        <input v-model="resetForm.password_confirmation" type="password"
+                            class="form-control form-control-lg glass-input" placeholder="Confirm Password" required>
+
+                        <button class="btn btn-glow btn-lg rounded-3 py-3 fw-bold fs-5">
+                            تغيير كلمة المرور
+                        </button>
+                    </form>
+
+
                     <!-- Switch link -->
                     <div class="text-center mt-4 text-white fs-6">
                         <span v-if="tab === 'register'">
@@ -151,12 +195,20 @@
 </template>
 
 <script setup>
-import COLORS, { rgba } from '@/components/assets/colors.js'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
 
 const tab = ref('login')
+const forgotEmail = ref('')
+
+const resetForm = ref({
+    email: '',
+    otp: '',
+    password: '',
+    password_confirmation: ''
+})
+
 const showPassword = ref(false)
 const router = useRouter()
 const route = useRoute()
@@ -167,30 +219,38 @@ const loading = ref(false)
 const error = ref('')
 const successMessage = ref('')
 
-const saveTokenAndRedirect = (token) => {
+const saveTokenAndRedirect = (token, role = 'user') => {
     if (!token) return
 
     localStorage.setItem('auth_token', token)
+    localStorage.setItem('user_role', role)
+
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
     const url = new URL(window.location.href)
     url.searchParams.delete('token')
     window.history.replaceState({}, document.title, url)
 
-    router.push('/')
+    if (role === 'admin') {
+        router.push('/admin')
+    } else {
+        router.push('/')
+    }
 }
 
 onMounted(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const token = urlParams.get('token')
+    const role = urlParams.get('role')
     const errorParam = urlParams.get('error')
 
     if (token) {
-        saveTokenAndRedirect(token)
+        saveTokenAndRedirect(token, role)
     } else if (errorParam) {
         alert(errorParam)
     }
 })
+
 
 const handleLogin = async () => {
     loading.value = true
@@ -200,7 +260,7 @@ const handleLogin = async () => {
         const res = await axios.post('/v1/users/login', loginForm.value)
 
         if (res.data.status === 'success') {
-            saveTokenAndRedirect(res.data.data.token)
+            saveTokenAndRedirect(res.data.data.token, res.data.data.user.role)
         } else {
             error.value = res.data.message || 'Login failed'
         }
@@ -219,7 +279,7 @@ const handleRegister = async () => {
         const res = await axios.post('/v1/users/register', registerForm.value)
 
         if (res.data.status === 'success') {
-            successMessage.value = 'Account created successfully 🎉'
+            successMessage.value = 'Account created successfully'
             saveTokenAndRedirect(res.data.data.token)
         } else {
             error.value = res.data.message || 'Registration failed'
@@ -228,6 +288,34 @@ const handleRegister = async () => {
         error.value = err.response?.data?.message || 'Error during registration'
     } finally {
         loading.value = false
+    }
+}
+
+
+const handleForgot = async () => {
+    error.value = ''
+    try {
+        await axios.post('/v1/users/forgot-password', {
+            email: forgotEmail.value
+        })
+
+        resetForm.value.email = forgotEmail.value
+        successMessage.value = 'تم إرسال الكود على الإيميل'
+        tab.value = 'reset'
+    } catch (err) {
+        error.value = err.response?.data?.message || 'حصل خطأ'
+    }
+}
+
+const handleReset = async () => {
+    error.value = ''
+    try {
+        await axios.post('/v1/users/reset-password', resetForm.value)
+
+        successMessage.value = 'تم تغيير كلمة المرور بنجاح'
+        tab.value = 'login'
+    } catch (err) {
+        error.value = err.response?.data?.message || 'الكود غير صحيح'
     }
 }
 
@@ -240,6 +328,7 @@ const handleGoogleLogin = async () => {
     }
 }
 </script>
+
 <style scoped>
 /* ─── Common ─── */
 .waves {

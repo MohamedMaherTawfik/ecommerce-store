@@ -22,8 +22,7 @@
                         <div
                             class="col-lg-6 order-lg-2 d-flex align-items-center justify-content-center text-center text-lg-start">
                             <div class="px-5 px-lg-5 py-5 py-lg-0" style="max-width: 520px;">
-                                <h1 class="display-4 fw-black mb-3 text-glow"
-                                    style="letter-spacing: 1.5px; color: #FBBF64;">
+                                <h1 class="display-4 fw-black mb-3 text-glow" style="letter-spacing: 1.5px;">
                                     Trendy Wardrobe
                                 </h1>
 
@@ -102,9 +101,6 @@
         <h3 class="top-trending-styles text-glow mb-2 mt-2 fw-bold">
             Top Trending Styles
         </h3>
-
-
-
 
         <div class="d-flex flex-nowrap justify-content-center mt-5 gap-4 gap-md-5 overflow-auto pb-4">
             <div class="featured-card text-center d-flex flex-column align-items-center"
@@ -192,7 +188,6 @@ const bestSellingProducts = [
     },
 ];
 </script>
-
 
 <style scoped>
 .z-3 {
@@ -554,10 +549,13 @@ const bestSellingProducts = [
 [data-theme='light'] .text-glow * {
     background: none !important;
     -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: #111827 !important;
+    /* 👈 السطر المهم */
     color: #111827 !important;
     filter: none !important;
-    text-shadow: none;
+    text-shadow: none !important;
 }
+
 
 /* Light mode button – black */
 [data-theme='light'] .btn-glow {
