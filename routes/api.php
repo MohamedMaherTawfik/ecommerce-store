@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\api\admin\BrandController;
 use App\Http\Controllers\api\admin\CategoreyController;
+use App\Http\Controllers\api\admin\ProductController;
 use App\Http\Controllers\api\admin\UserController;
 use App\Http\Controllers\api\auth\AuthController;
 use App\Http\Controllers\api\auth\GoogleAuthController;
+use App\Http\Middleware\AdminMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -27,7 +29,7 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::prefix('users')->middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
+    Route::prefix('users')->middleware(['auth:sanctum', AdminMiddleware::class, 'throttle:30,1'])->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::get('/all/get', [UserController::class, 'all']);
         Route::get('/User/count', [UserController::class, 'count']);
@@ -37,23 +39,32 @@ Route::prefix('v1')->group(function () {
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
-    Route::prefix('brands')->middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
+    Route::prefix('brands')->middleware(['auth:sanctum', AdminMiddleware::class, 'throttle:30,1'])->group(function () {
         Route::get('/', [BrandController::class, 'index']);
         Route::get('/brand/count', [BrandController::class, 'count']);
         Route::get('/{id}', [BrandController::class, 'show']);
-        Route::get('/{id}/products', [BrandController::class, 'products']);
+        // Route::get('/{id}/products', [BrandController::class, 'products']);
         Route::post('/create', [BrandController::class, 'create']);
         Route::post('/{id}', [BrandController::class, 'update']);
         Route::delete('/{id}', [BrandController::class, 'destroy']);
     });
 
-    Route::prefix('categories')->middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
+    Route::prefix('categories')->middleware(['auth:sanctum', AdminMiddleware::class, 'throttle:30,1'])->group(function () {
         Route::get('/', [CategoreyController::class, 'index']);
         Route::get('/category/count', [CategoreyController::class, 'count']);
         Route::get('/{id}', [CategoreyController::class, 'show']);
-        Route::get('/{id}/products', [CategoreyController::class, 'products']);
+        // Route::get('/{id}/products', [CategoreyController::class, 'products']);
         Route::post('/create', [CategoreyController::class, 'create']);
         Route::post('/{id}', [CategoreyController::class, 'update']);
         Route::delete('/{id}', [CategoreyController::class, 'destroy']);
+    });
+
+    Route::prefix('products')->middleware(['auth:sanctum', AdminMiddleware::class, 'throttle:30,1'])->group(function () {
+        Route::get('/', [ProductController::class, 'index']);
+        Route::get('/products/count', [ProductController::class, 'count']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+        Route::post('/create', [ProductController::class, 'create']);
+        Route::post('/{id}', [ProductController::class, 'update']);
+        Route::delete('/{id}', [ProductController::class, 'destroy']);
     });
 });

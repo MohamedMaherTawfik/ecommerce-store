@@ -11,4 +11,9 @@ class brands extends Model
     use HasFactory;
     protected $table = 'brands';
     protected $guarded = [];
+
+    public function products()
+    {
+        return $this->hasMany(Products::class);
+    }
 }

@@ -123,7 +123,7 @@ import { toast } from 'vue3-toastify';
 const isDark = computed(
     () => document.documentElement.getAttribute('data-theme') === 'dark'
 )
-
+const productCount = ref(0)
 const users = ref([])
 const loadingUsers = ref(false)
 const deletingUserId = ref(null)
@@ -131,12 +131,30 @@ const userCount = ref(0)
 const brandCount = ref(0)
 const categoryCount = ref(0)
 
+const fetchProductCount = async () => {
+    const token = localStorage.getItem('auth_token')
+    if (!token) return
+
+    try {
+        const res = await axios.get('http://localhost:8000/api/v1/products/products/count', {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        if (res.data.success) {
+            productCount.value = res.data.data
+        } else {
+            console.warn('API returned success: false')
+        }
+    } catch (err) {
+        console.error('Failed to fetch products count:', err)
+    }
+}
 
 onMounted(async () => {
     await fetchUserCount()
     await fetchUsers()
     await fetchBrandCount()
     await fetchCategoryCount()
+    await fetchProductCount()
 })
 
 const fetchBrandCount = async () => {
@@ -204,15 +222,12 @@ const fetchUsers = async () => {
         users.value = res.data.data
     } catch (err) {
         console.error('Failed to fetch users', err)
-        // Optional: redirect to login on 401
     } finally {
         loadingUsers.value = false
     }
 }
 
 const editUser = async (user) => {
-    // You can open a modal here or redirect to edit page
-    // Simple example using prompt (replace with your modal logic)
     const newName = prompt("Enter new name:", user.name)
     if (!newName || newName === user.name) return
 
@@ -222,14 +237,12 @@ const editUser = async (user) => {
     try {
         const res = await axios.post(`http://localhost:8000/api/v1/users/${user.id}`, {
             name: newName
-            // add other fields you want to update
         }, {
             headers: { Authorization: `Bearer ${token}` }
         })
 
         if (res.data.success) {
             toast.success("User updated successfully")
-            // Refresh list or update locally
             const index = users.value.findIndex(u => u.id === user.id)
             if (index !== -1) {
                 users.value[index].name = newName
@@ -271,7 +284,7 @@ const firstRowCards = computed(() => [
     { title: 'Users', count: userCount.value, icon: 'bi-people', themeClass: isDark.value ? 'bg-users-dark' : 'bg-users-light' },
     { title: 'Brands', count: brandCount.value, icon: 'bi-award', themeClass: isDark.value ? 'bg-brands-dark' : 'bg-brands-light' },
     { title: 'Categories', count: categoryCount.value, icon: 'bi-tags', themeClass: isDark.value ? 'bg-categories-dark' : 'bg-categories-light' },
-    { title: 'Products', count: 20, icon: 'bi-box-seam', themeClass: isDark.value ? 'bg-products-dark' : 'bg-products-light' },
+    { title: 'Products', count: productCount.value, icon: 'bi-box-seam', themeClass: isDark.value ? 'bg-products-dark' : 'bg-products-light' },
 ])
 
 const secondRowCards = computed(() => [

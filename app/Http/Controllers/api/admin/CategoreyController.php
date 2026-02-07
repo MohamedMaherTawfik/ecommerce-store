@@ -7,6 +7,7 @@ use App\Http\Requests\categoreyRequest;
 use App\Models\Categories;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class CategoreyController extends Controller
 {
@@ -24,7 +25,7 @@ class CategoreyController extends Controller
         $cacheKey = "categories_page_{$page}";
 
         $categories = Cache::remember($cacheKey, $this->cacheTime, function () {
-            return Categories::paginate(10);
+            return Categories::paginate(6);
         });
 
         return $this->apiResponse($categories, 'All Categories');
@@ -76,21 +77,22 @@ class CategoreyController extends Controller
      */
     public function create(categoreyRequest $request)
     {
-        $data = $request->validated();
-
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $data['image'] = $file->store('Categories', 'public');
+        try {
+            DB::beginTransaction();
+            $data = $request->validated();
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $data['image'] = $file->store('Categories', 'public');
+            }
+            $data['slug'] = $data['name'] . '-' . time();
+            $category = Categories::create($data);
+            $this->clearCategoryCache($category->id);
+            DB::commit();
+            return $this->apiResponse($category, 'Category Created Successfully');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return $this->apiResponse([], $th->getMessage());
         }
-
-        $data['slug'] = $data['name'] . '-' . time();
-
-        $category = Categories::create($data);
-
-        // Clear cache
-        $this->clearCategoryCache($category->id);
-
-        return $this->apiResponse($category, 'Category Created Successfully');
     }
 
     /**

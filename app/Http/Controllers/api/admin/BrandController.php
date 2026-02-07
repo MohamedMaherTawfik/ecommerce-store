@@ -7,6 +7,7 @@ use App\Http\Requests\BrandRequest;
 use App\Models\brands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class BrandController extends Controller
 {
@@ -66,19 +67,22 @@ class BrandController extends Controller
      */
     public function create(BrandRequest $request)
     {
-        $data = $request->validated();
-
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('brands', 'public');
+        try {
+            DB::beginTransaction();
+            $data = $request->validated();
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('brands', 'public');
+            }
+            $data['slug'] = $data['name'] . '-' . time();
+            $brand = brands::create($data);
+            $this->clearBrandCache();
+            DB::commit();
+            return $this->apiResponse($brand, 'Brand Created Successfully');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return $this->apiResponse([], $th->getMessage());
         }
 
-        $data['slug'] = $data['name'] . '-' . time();
-
-        $brand = brands::create($data);
-
-        $this->clearBrandCache();
-
-        return $this->apiResponse($brand, 'Brand Created Successfully');
     }
 
     /**

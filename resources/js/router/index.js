@@ -10,6 +10,9 @@ import allBrands from "../views/admin/brands/allBrands.vue";
 import addBrand from "../views/admin/brands/addBrand.vue";
 import allcategories from "../views/admin/categorey/allcategories.vue";
 import addcategorey from "../views/admin/categorey/addcategorey.vue";
+import allProducts from "../views/admin/products/allProducts.vue";
+import addProduct from "../views/admin/products/addProduct.vue";
+import showProduct from "../views/admin/products/showProduct.vue";
 
 const routes = [
     {
@@ -33,6 +36,21 @@ const routes = [
     {
         path: "/admin",
         component: admin,
+        meta: { hideNavbar: true, hideFooter: true },
+    },
+    {
+        path: "/admin/products",
+        component: allProducts,
+        meta: { hideNavbar: true, hideFooter: true },
+    },
+    {
+        path: "/admin/products/:id",
+        component: showProduct,
+        meta: { hideNavbar: true, hideFooter: true },
+    },
+    {
+        path: "/admin/products/create",
+        component: addProduct,
         meta: { hideNavbar: true, hideFooter: true },
     },
     {

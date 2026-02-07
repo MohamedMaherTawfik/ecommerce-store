@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Controllers\api\admin\apiResponse;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -15,12 +16,12 @@ class AdminMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next): JsonResponse|Response
     {
-        if (auth()->user()->role == 'admin') {
-
-            return $next($request);
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return $this->unauthorized();
         }
-        return $this->unauthorized('Unauthorized Request');
+        return $next($request);
     }
 }
