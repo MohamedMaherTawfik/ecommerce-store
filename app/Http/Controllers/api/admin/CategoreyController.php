@@ -32,6 +32,17 @@ class CategoreyController extends Controller
     }
 
     /**
+     * Get all categories with caching
+     */
+    public function all()
+    {
+        $categories = Cache::remember('all_categories', $this->cacheTime, function () {
+            return Categories::all();
+        });
+        return $this->apiResponse($categories, 'All categories');
+    }
+
+    /**
      * Get total count of categories with caching
      */
     public function count()

@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('brands')->middleware(['auth:sanctum', AdminMiddleware::class, 'throttle:30,1'])->group(function () {
         Route::get('/', [BrandController::class, 'index']);
+        Route::get('/all/brands', [BrandController::class, 'all']);
         Route::get('/brand/count', [BrandController::class, 'count']);
         Route::get('/{id}', [BrandController::class, 'show']);
         // Route::get('/{id}/products', [BrandController::class, 'products']);
@@ -51,6 +52,7 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('categories')->middleware(['auth:sanctum', AdminMiddleware::class, 'throttle:30,1'])->group(function () {
         Route::get('/', [CategoreyController::class, 'index']);
+        Route::get('/all/categories', [CategoreyController::class, 'all']);
         Route::get('/category/count', [CategoreyController::class, 'count']);
         Route::get('/{id}', [CategoreyController::class, 'show']);
         // Route::get('/{id}/products', [CategoreyController::class, 'products']);

@@ -29,6 +29,14 @@ class BrandController extends Controller
         return $this->apiResponse($brands, 'All Brands');
     }
 
+    public function all()
+    {
+        $brands = Cache::remember('all_brands', $this->cacheTime, function () {
+            return brands::all();
+        });
+        return $this->apiResponse($brands, 'All Brands');
+    }
+
     /**
      * Get total count of brands with caching
      */

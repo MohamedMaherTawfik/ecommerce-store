@@ -43,6 +43,9 @@ class ProductController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->validated();
+             if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('products', 'public');
+            }
             $data['slug'] = $data['name'] . '-' . time();
             $product = Products::create($data);
             DB::commit();
@@ -59,6 +62,9 @@ class ProductController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->validated();
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('products', 'public');
+            }
             $data['slug'] = $data['name'] . '-' . time();
             $product = Products::find(request('id'));
             $product->update($data);
