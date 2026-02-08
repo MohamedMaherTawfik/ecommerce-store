@@ -80,9 +80,13 @@ class CategoreyController extends Controller
      */
     public function products()
     {
-        return $this->apiResponse([], 'Products');
+        $id = request('id');
+        $categories = Categories::find($id);
+        if (!$categories) {
+            return $this->apiResponse([], 'categories Not Found');
+        }
+        return $this->apiResponse($categories->products, 'categories Products');
     }
-
     /**
      * Create a new category and clear relevant cache
      */

@@ -44,7 +44,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/all/brands', [BrandController::class, 'all']);
         Route::get('/brand/count', [BrandController::class, 'count']);
         Route::get('/{id}', [BrandController::class, 'show']);
-        // Route::get('/{id}/products', [BrandController::class, 'products']);
+        Route::get('/{id}/products', [BrandController::class, 'products']);
         Route::post('/create', [BrandController::class, 'create']);
         Route::post('/{id}', [BrandController::class, 'update']);
         Route::delete('/{id}', [BrandController::class, 'destroy']);
@@ -55,7 +55,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/all/categories', [CategoreyController::class, 'all']);
         Route::get('/category/count', [CategoreyController::class, 'count']);
         Route::get('/{id}', [CategoreyController::class, 'show']);
-        // Route::get('/{id}/products', [CategoreyController::class, 'products']);
+        Route::get('/{id}/products', [CategoreyController::class, 'products']);
         Route::post('/create', [CategoreyController::class, 'create']);
         Route::post('/{id}', [CategoreyController::class, 'update']);
         Route::delete('/{id}', [CategoreyController::class, 'destroy']);

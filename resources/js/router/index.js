@@ -8,7 +8,9 @@ import All from "../views/admin/users/all.vue";
 import Add from "../views/admin/users/add.vue";
 import allBrands from "../views/admin/brands/allBrands.vue";
 import addBrand from "../views/admin/brands/addBrand.vue";
+import showBrand from "../views/admin/brands/showBrand.vue";
 import allcategories from "../views/admin/categorey/allcategories.vue";
+import showCategorey from "../views/admin/categorey/showCategorey.vue";
 import addcategorey from "../views/admin/categorey/addcategorey.vue";
 import allProducts from "../views/admin/products/allProducts.vue";
 import addProduct from "../views/admin/products/addProduct.vue";
@@ -78,6 +80,12 @@ const routes = [
     },
 
     {
+        path: "/admin/brands/:id",
+        component: showBrand,
+        meta: { hideNavbar: true, hideFooter: true },
+    },
+
+    {
         path: "/admin/brands/create",
         component: addBrand,
         meta: { hideNavbar: true, hideFooter: true },
@@ -88,7 +96,11 @@ const routes = [
         component: allcategories,
         meta: { hideNavbar: true, hideFooter: true },
     },
-
+    {
+        path: "/admin/categories/:id",
+        component: showCategorey,
+        meta: { hideNavbar: true, hideFooter: true },
+    },
     {
         path: "/admin/categories/create",
         component: addcategorey,

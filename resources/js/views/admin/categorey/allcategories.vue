@@ -27,6 +27,10 @@
                         <div class="brand-actions">
                             <button class="btn edit-btn" @click="editBrand(brand)">Edit</button>
                             <button class="btn delete-btn" @click="deleteBrand(brand.id)">Delete</button>
+                            <!-- زرار Show -->
+                            <button class="btn btn-sm btn-info text-white" @click="goToBrand(brand.id)">
+                                Show
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -57,6 +61,9 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const theme = localStorage.getItem('theme') || 'light'
 
@@ -104,7 +111,9 @@ const getImageUrl = (path) => {
     return path ? `/storage/${path}` : null
 }
 
-
+const goToBrand = (id) => {
+    router.push(`/admin/categories/${id}`)
+}
 // Pagination logic: show up to 5 pages
 const visiblePages = computed(() => {
     const pages = []

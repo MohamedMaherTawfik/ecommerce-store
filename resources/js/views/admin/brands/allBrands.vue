@@ -24,13 +24,19 @@
 
                     <div class="brand-info">
                         <h3 class="brand-name">{{ brand.name }}</h3>
-                        <div class="brand-actions">
-                            <button class="btn edit-btn" @click="editBrand(brand)">Edit</button>
-                            <button class="btn delete-btn" @click="deleteBrand(brand.id)">Delete</button>
+                        <div class="brand-actions d-flex gap-2">
+                            <button class="btn btn-sm btn-primary" @click="editBrand(brand)">Edit</button>
+                            <button class="btn btn-sm btn-danger" @click="deleteBrand(brand.id)">Delete</button>
+                            <!-- زرار Show -->
+                            <button class="btn btn-sm btn-info text-white" @click="goToBrand(brand.id)">
+                                Show
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+
+
 
             <div v-else class="no-data">No brands found.</div>
 
@@ -57,7 +63,9 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const theme = localStorage.getItem('theme') || 'light'
 
 const brands = ref([])
@@ -125,6 +133,10 @@ const visiblePages = computed(() => {
     return pages
 })
 
+
+const goToBrand = (id) => {
+    router.push(`/admin/brands/${id}`)
+}
 // Change page
 const changePage = (page) => {
     if (page < 1 || page > pagination.value.last_page || page === currentPage.value) return

@@ -70,6 +70,16 @@ class BrandController extends Controller
         return $this->apiResponse($brand, 'Brand');
     }
 
+    public function products()
+    {
+        $id = request('id');
+        $brand = brands::find($id);
+        if (!$brand) {
+            return $this->apiResponse([], 'Brand Not Found');
+        }
+        return $this->apiResponse($brand->products, 'Brand Products');
+    }
+
     /**
      * Create a new brand and clear relevant cache
      */
