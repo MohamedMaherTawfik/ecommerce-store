@@ -13,156 +13,207 @@ class BrandController extends Controller
 {
     use apiResponse;
 
-    private $cacheTime = 3600; // 1 ساعة
+    private $cacheTime = 3600;
 
-    /**
-     * Get paginated brands with caching
-     */
+    // =========================
+    // INDEX
+    // =========================
     public function index()
     {
-        $page = request('page', 1);
-        $cacheKey = "brands_index_page_$page";
+        try {
+            $page = request('page', 1);
 
-        $brands = Cache::remember($cacheKey, $this->cacheTime, function () {
-            return brands::latest()->paginate(6);
-        });
-        return $this->apiResponse($brands, 'All Brands');
+            $brands = Cache::tags('brands')->remember(
+                "index_page_$page",
+                $this->cacheTime,
+                fn() => brands::latest()->paginate(6)
+            );
+
+            return $this->success($brands, 'All Brands');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load brands', $e);
+        }
     }
 
+    // =========================
+    // ALL
+    // =========================
     public function all()
     {
-        $brands = Cache::remember('all_brands', $this->cacheTime, function () {
-            return brands::all();
-        });
-        return $this->apiResponse($brands, 'All Brands');
+        try {
+            $brands = Cache::tags('brands')->remember(
+                "all",
+                $this->cacheTime,
+                fn() => brands::all()
+            );
+
+            return $this->success($brands, 'All Brands');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load brands', $e);
+        }
     }
 
-    /**
-     * Get total count of brands with caching
-     */
+    // =========================
+    // COUNT
+    // =========================
     public function count()
     {
-        $cacheKey = 'brands_count';
+        try {
+            $count = Cache::tags('brands')->remember(
+                "count",
+                $this->cacheTime,
+                fn() => brands::count()
+            );
 
-        $count = Cache::remember($cacheKey, $this->cacheTime, function () {
-            return brands::count();
-        });
-
-        return $this->apiResponse($count, 'Brands Count');
+            return $this->success($count, 'Brands Count');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to get brands count', $e);
+        }
     }
 
-    /**
-     * Show single brand with caching
-     */
+    // =========================
+    // SHOW
+    // =========================
     public function show()
     {
-        $id = request('id');
-        $cacheKey = "brand_$id";
+        try {
+            $id = request('id');
 
-        $brand = Cache::remember($cacheKey, $this->cacheTime, function () use ($id) {
-            return brands::find($id);
-        });
+            $brand = Cache::tags('brands')->remember(
+                "brand_$id",
+                $this->cacheTime,
+                fn() => brands::find($id)
+            );
 
-        if (!$brand) {
-            return $this->apiResponse([], 'Brand Not Found');
+            if (!$brand) {
+                return $this->notFound('Brand Not Found');
+            }
+
+            return $this->success($brand, 'Brand Details');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load brand', $e);
         }
-
-        return $this->apiResponse($brand, 'Brand');
     }
 
+    // =========================
+    // PRODUCTS
+    // =========================
     public function products()
     {
-        $id = request('id');
-        $brand = brands::find($id);
-        if (!$brand) {
-            return $this->apiResponse([], 'Brand Not Found');
+        try {
+            $id = request('id');
+
+            $brand = brands::with('products')->find($id);
+
+            if (!$brand) {
+                return $this->notFound('Brand Not Found');
+            }
+
+            return $this->success($brand->products, 'Brand Products');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load products', $e);
         }
-        return $this->apiResponse($brand->products, 'Brand Products');
     }
 
-    /**
-     * Create a new brand and clear relevant cache
-     */
+    // =========================
+    // CREATE
+    // =========================
     public function create(BrandRequest $request)
     {
         try {
             DB::beginTransaction();
+
             $data = $request->validated();
+
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('brands', 'public');
             }
-            $data['slug'] = $data['name'] . '-' . time();
-            $brand = brands::create($data);
-            $this->clearBrandCache();
-            DB::commit();
-            return $this->apiResponse($brand, 'Brand Created Successfully');
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return $this->apiResponse([], $th->getMessage());
-        }
 
+            $data['slug'] = $data['name'] . '-' . time();
+
+            $brand = brands::create($data);
+
+            $this->clearBrandCache();
+
+            DB::commit();
+
+            return $this->created($brand, 'Brand Created Successfully');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return $this->serverError('Failed to create brand', $e);
+        }
     }
 
-    /**
-     * Update a brand and clear relevant cache
-     */
+    // =========================
+    // UPDATE
+    // =========================
     public function update(Request $request)
     {
-        $id = request('id');
-        $brand = brands::find($id);
+        try {
+            $id = request('id');
 
-        if (!$brand) {
-            return $this->apiResponse([], 'Brand Not Found');
+            $brand = brands::find($id);
+
+            if (!$brand) {
+                return $this->notFound('Brand Not Found');
+            }
+
+            $data = $request->all();
+
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('brands');
+            }
+
+            $brand->update($data);
+
+            $this->clearBrandCache($id);
+
+            return $this->success($brand, 'Brand Updated Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to update brand', $e);
         }
-
-        $data = $request->all();
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('brands');
-        }
-
-        $brand->update($data);
-
-        $this->clearBrandCache($id);
-
-        return $this->apiResponse($brand, 'Brand Updated Successfully');
     }
 
-    /**
-     * Delete a brand and clear relevant cache
-     */
+    // =========================
+    // DELETE
+    // =========================
     public function destroy()
     {
-        $id = request('id');
-        $brand = brands::find($id);
+        try {
+            $id = request('id');
 
-        if (!$brand) {
-            return $this->apiResponse([], 'Brand Not Found');
+            $brand = brands::find($id);
+
+            if (!$brand) {
+                return $this->notFound('Brand Not Found');
+            }
+
+            $brand->delete();
+
+            $this->clearBrandCache($id);
+
+            return $this->success([], 'Brand Deleted Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to delete brand', $e);
         }
-
-        $brand->delete();
-
-        $this->clearBrandCache($id);
-
-        return $this->apiResponse([], 'Brand Deleted Successfully');
     }
 
-    /**
-     * Clear all relevant cache keys
-     */
+    // =========================
+    // CACHE CLEAR (TAG BASED)
+    // =========================
     private function clearBrandCache($id = null)
     {
-        // Clear count cache
-        Cache::forget('brands_count');
+        try {
+            // 🔥 clear all brands cache instantly
+            Cache::tags('brands')->flush();
 
-        // Clear paginated pages cache
-        $pages = ceil(brands::count() / 10);
-        for ($i = 1; $i <= max(1, $pages); $i++) {
-            Cache::forget("brands_index_page_$i");
-        }
+            // safety fallback
+            if ($id) {
+                Cache::forget("brand_$id");
+            }
 
-        // Clear single brand cache if id provided
-        if ($id) {
-            Cache::forget("brand_$id");
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 }

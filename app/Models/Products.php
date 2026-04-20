@@ -28,4 +28,24 @@ class Products extends Model
     {
         return $this->belongsTo(brands::class, 'brands_id');
     }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImages::class);
+    }
+
+    public function sizes()
+    {
+        return $this->hasMany(ProductSizes::class);
+    }
+
+    public function colors()
+    {
+        return $this->hasMany(ProductColors::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Reviews::class);
+    }
 }

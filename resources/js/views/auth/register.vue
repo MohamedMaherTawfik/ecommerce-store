@@ -10,7 +10,8 @@
             <!-- Left branding side -->
             <div class="d-none d-lg-flex col-lg-5 align-items-center justify-content-center p-5 position-relative">
                 <div class="text-center">
-                    <img src="/images/logo.png" alt="NEXTLEVEL Logo" class="height-auto logo-glow" style="width: auto;">
+                    <img src="/images/logo1.png" alt="NEXTLEVEL Logo" class="height-auto logo-glow"
+                        style="width: auto;">
                     <h1 class="display-3 fw-black mb-3">NEXTLEVEL</h1>
                     <p class="lead fs-4 fw-medium opacity-90">
                         Elevate Your Shopping Experience
@@ -23,7 +24,7 @@
                 <div class="glass-card rounded-4 shadow-glow p-4 p-md-5 w-100"
                     style="max-width: 480px; backdrop-filter: blur(16px);">
 
-                    <!-- Tabs with animated underline -->
+                    <!-- Tabs -->
                     <div class="position-relative mb-4"
                         style="border-bottom: 1px solid rgba(255,255,255,0.15); max-width: 400px;">
                         <ul class="nav nav-pills nav-fill">
@@ -33,7 +34,6 @@
                                     Login
                                 </button>
                             </li>
-
                             <li class="nav-item text-center flex-grow-1">
                                 <button class="nav-link px-0 fs-5 fw-semibold position-relative"
                                     :class="{ 'active-tab': tab === 'register' }" @click.prevent="tab = 'register'">
@@ -44,7 +44,8 @@
 
                         <!-- Animated underline -->
                         <div class="position-absolute rounded-pill"
-                            style="height: 3px; bottom: 0; transition: all 0.4s ease;">
+                            style="height: 3px; bottom: 0; transition: all 0.4s ease; left: 0; width: 50%;"
+                            :style="{ transform: tab === 'register' ? 'translateX(100%)' : 'translateX(0)' }">
                         </div>
                     </div>
 
@@ -73,30 +74,30 @@
                             :disabled="loading">
                             {{ loading ? 'Loading...' : 'Login' }}
                         </button>
-                        <p class="text-right">
+
+                        <p class="text-end">
                             <a href="#" class="text-glow fw-medium fs-6" @click.prevent="tab = 'forgot'">
                                 هل نسيت كلمة المرور؟
                             </a>
                         </p>
 
+                        <p v-if="error" class="text-center text-danger">{{ error }}</p>
 
-                        <p v-if="error" class="text-center text-danger text-sm ">{{ error }}</p>
-
-                        <!-- Google Login Button -->
-                        <div class="d-flex flex-column gap-3">
-                            <button @click.prevent="handleGoogleLogin"
-                                class="btn btn-google btn-lg d-flex align-items-center justify-content-center gap-2">
-                                <img src="/images/google_logo.png" alt="Google Logo" style="width:36px; height:36px;">
-                                Continue with Google
-                            </button>
-                        </div>
+                        <!-- Google Button -->
+                        <button @click.prevent="handleGoogleLogin"
+                            class="btn btn-google btn-lg d-flex align-items-center justify-content-center gap-2">
+                            <img src="/images/google_logo.png" alt="Google Logo" style="width:36px; height:36px;">
+                            Continue with Google
+                        </button>
                     </form>
 
                     <!-- Register Form -->
-                    <form v-else @submit.prevent="handleRegister" class="d-flex flex-column gap-4">
+                    <form v-else-if="tab === 'register'" @submit.prevent="handleRegister"
+                        class="d-flex flex-column gap-4">
                         <input v-model="registerForm.name" type="text"
                             class="form-control form-control-lg glass-input rounded-3 py-3 px-4 fs-5"
                             placeholder="Full Name" required>
+
                         <input v-model="registerForm.email" type="email"
                             class="form-control form-control-lg glass-input rounded-3 py-3 px-4 fs-5"
                             placeholder="Email Address" required>
@@ -127,20 +128,18 @@
                             {{ loading ? 'Creating...' : 'Create Account' }}
                         </button>
 
-                        <p v-if="error" class="text-center text-danger text-sm mt-2">{{ error }}</p>
+                        <p v-if="error" class="text-center text-danger">{{ error }}</p>
 
-                        <!-- Google Register Button -->
-                        <div class="d-flex flex-column gap-3 mt-3">
-                            <button @click.prevent="handleGoogleLogin"
-                                class="btn btn-google btn-lg d-flex align-items-center justify-content-center gap-2">
-                                <img src="/images/google_logo.png" alt="Google Logo" style="width:36px; height:36px;">
-                                Continue with Google
-                            </button>
-                        </div>
+                        <!-- Google Button -->
+                        <button @click.prevent="handleGoogleLogin"
+                            class="btn btn-google btn-lg d-flex align-items-center justify-content-center gap-2">
+                            <img src="/images/google_logo.png" alt="Google Logo" style="width:36px; height:36px;">
+                            Continue with Google
+                        </button>
                     </form>
 
-                    <form v-if="tab === 'forgot'" @submit.prevent="handleForgot" class="d-flex flex-column gap-4">
-
+                    <!-- Forgot & Reset Forms (unchanged) -->
+                    <form v-else-if="tab === 'forgot'" @submit.prevent="handleForgot" class="d-flex flex-column gap-4">
                         <input v-model="forgotEmail" type="email"
                             class="form-control form-control-lg glass-input rounded-3 py-3 px-4 fs-5"
                             placeholder="Email Address" required>
@@ -150,23 +149,17 @@
                         </button>
 
                         <p class="text-center">
-                            <a href="#" class="text-glow" @click.prevent="tab = 'login'">
-                                رجوع لتسجيل الدخول
-                            </a>
+                            <a href="#" class="text-glow" @click.prevent="tab = 'login'">رجوع لتسجيل الدخول</a>
                         </p>
                     </form>
 
-                    <form v-if="tab === 'reset'" @submit.prevent="handleReset" class="d-flex flex-column gap-4">
-
+                    <form v-else-if="tab === 'reset'" @submit.prevent="handleReset" class="d-flex flex-column gap-4">
                         <input v-model="resetForm.email" type="email" class="form-control form-control-lg glass-input"
                             placeholder="Email" required>
-
                         <input v-model="resetForm.otp" type="text" class="form-control form-control-lg glass-input"
                             placeholder="OTP Code" required>
-
                         <input v-model="resetForm.password" type="password"
                             class="form-control form-control-lg glass-input" placeholder="New Password" required>
-
                         <input v-model="resetForm.password_confirmation" type="password"
                             class="form-control form-control-lg glass-input" placeholder="Confirm Password" required>
 
@@ -175,14 +168,13 @@
                         </button>
                     </form>
 
-
-                    <!-- Switch link -->
+                    <!-- Switch between Login & Register -->
                     <div class="text-center mt-4 text-white fs-6">
                         <span v-if="tab === 'register'">
                             Already have an account?
                             <a href="#" class="text-glow fw-medium" @click.prevent="tab = 'login'">Login</a>
                         </span>
-                        <span v-else>
+                        <span v-else-if="tab === 'login'">
                             Don't have an account?
                             <a href="#" class="text-glow fw-medium" @click.prevent="tab = 'register'">Register</a>
                         </span>
@@ -199,8 +191,25 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
 
+const router = useRouter()
+const route = useRoute()
+
+// ===================== STATE =====================
 const tab = ref('login')
 const forgotEmail = ref('')
+const showPassword = ref(false)
+
+const loginForm = ref({
+    email: '',
+    password: ''
+})
+
+const registerForm = ref({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: ''
+})
 
 const resetForm = ref({
     email: '',
@@ -209,16 +218,11 @@ const resetForm = ref({
     password_confirmation: ''
 })
 
-const showPassword = ref(false)
-const router = useRouter()
-const route = useRoute()
-
-const loginForm = ref({ email: '', password: '' })
-const registerForm = ref({ name: '', email: '', password: '', password_confirmation: '' })
 const loading = ref(false)
 const error = ref('')
 const successMessage = ref('')
 
+// ===================== TOKEN HANDLER =====================
 const saveTokenAndRedirect = (token, role = 'user') => {
     if (!token) return
 
@@ -227,10 +231,10 @@ const saveTokenAndRedirect = (token, role = 'user') => {
 
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
-    const url = new URL(window.location.href)
-    url.searchParams.delete('token')
-    window.history.replaceState({}, document.title, url)
+    // تنظيف الرابط
+    router.replace({ path: '/auth' })
 
+    // redirect حسب role
     if (role === 'admin') {
         router.push('/admin')
     } else {
@@ -238,20 +242,22 @@ const saveTokenAndRedirect = (token, role = 'user') => {
     }
 }
 
+// ===================== GOOGLE CALLBACK FIX =====================
 onMounted(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const token = urlParams.get('token')
-    const role = urlParams.get('role')
-    const errorParam = urlParams.get('error')
+    const token = route.query.token
+    const role = route.query.role
+    const errorParam = route.query.error
 
     if (token) {
-        saveTokenAndRedirect(token, role)
-    } else if (errorParam) {
-        alert(errorParam)
+        saveTokenAndRedirect(token, role || 'user')
+    }
+
+    if (errorParam) {
+        error.value = decodeURIComponent(errorParam)
     }
 })
 
-
+// ===================== LOGIN =====================
 const handleLogin = async () => {
     loading.value = true
     error.value = ''
@@ -260,7 +266,10 @@ const handleLogin = async () => {
         const res = await axios.post('/v1/users/login', loginForm.value)
 
         if (res.data.status === 'success') {
-            saveTokenAndRedirect(res.data.data.token, res.data.data.user.role)
+            saveTokenAndRedirect(
+                res.data.data.token,
+                res.data.data.user.role
+            )
         } else {
             error.value = res.data.message || 'Login failed'
         }
@@ -271,16 +280,22 @@ const handleLogin = async () => {
     }
 }
 
+// ===================== REGISTER =====================
 const handleRegister = async () => {
     loading.value = true
     error.value = ''
+    successMessage.value = ''
 
     try {
         const res = await axios.post('/v1/users/register', registerForm.value)
 
         if (res.data.status === 'success') {
             successMessage.value = 'Account created successfully'
-            saveTokenAndRedirect(res.data.data.token)
+
+            saveTokenAndRedirect(
+                res.data.data.token,
+                res.data.data.user?.role || 'user'
+            )
         } else {
             error.value = res.data.message || 'Registration failed'
         }
@@ -291,40 +306,51 @@ const handleRegister = async () => {
     }
 }
 
-
+// ===================== FORGOT PASSWORD =====================
 const handleForgot = async () => {
+    loading.value = true
     error.value = ''
+
     try {
-        await axios.post('/v1/users/forgot-password', {
+        const res = await axios.post('/v1/users/forgot-password', {
             email: forgotEmail.value
         })
 
-        resetForm.value.email = forgotEmail.value
-        successMessage.value = 'تم إرسال الكود على الإيميل'
-        tab.value = 'reset'
+        successMessage.value = res.data.message || 'Check your email'
     } catch (err) {
-        error.value = err.response?.data?.message || 'حصل خطأ'
+        error.value = err.response?.data?.message || 'Error sending reset code'
+    } finally {
+        loading.value = false
     }
 }
 
+// ===================== RESET PASSWORD =====================
 const handleReset = async () => {
+    loading.value = true
     error.value = ''
-    try {
-        await axios.post('/v1/users/reset-password', resetForm.value)
 
-        successMessage.value = 'تم تغيير كلمة المرور بنجاح'
+    try {
+        const res = await axios.post('/v1/users/reset-password', resetForm.value)
+
+        successMessage.value = res.data.message || 'Password reset successful'
         tab.value = 'login'
     } catch (err) {
-        error.value = err.response?.data?.message || 'الكود غير صحيح'
+        error.value = err.response?.data?.message || 'Error resetting password'
+    } finally {
+        loading.value = false
     }
 }
 
+// ===================== GOOGLE LOGIN =====================
 const handleGoogleLogin = async () => {
     try {
-        const res = await axios.get('/v1/users/google-login');
-        window.location.href = res.data.url;
+        const res = await axios.get('/v1/users/google-login')
+
+        if (res.data.status === 'success') {
+            window.location.href = res.data.url
+        }
     } catch (err) {
-        console.log(err);
+        error.value = 'Google login failed'
     }
 }
 </script>

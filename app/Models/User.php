@@ -51,4 +51,19 @@ class User extends Authenticatable
      *
      * @return mixed
      */
+
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Reviews::class);
+    }
+
+    public function addresses()
+    {
+        return $this->hasMany(Addresses::class);
+    }
 }

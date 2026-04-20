@@ -3,7 +3,7 @@
         <div class="container d-flex justify-content-between align-items-center">
 
             <!-- Logo -->
-            <img src="/images/logo.png" class="logo" alt="Logo" />
+            <img src="/images/logo1.png" class="logo" alt="Logo" />
 
             <!-- Links -->
             <nav class="d-none d-md-flex flex-grow-1 justify-content-center">
@@ -154,8 +154,8 @@ onMounted(() => {
 
 /* Logo */
 .logo {
-    width: 160px;
-    height: 80px;
+    width: 130px;
+    height: 60px;
     object-fit: cover;
 }
 

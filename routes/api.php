@@ -20,7 +20,7 @@ Route::prefix('v1')->group(function () {
             ->middleware(['throttle:5,1', 'guest']);
 
         Route::get('/google-login', [GoogleAuthController::class, 'googleLogin'])->middleware('guest');
-        Route::get('/google-callback', [GoogleAuthController::class, 'googleCallback'])->middleware('guest');
+        // Route::get('/google-callback', [GoogleAuthController::class, 'googleCallback'])->middleware('guest');
 
         Route::middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
             Route::get('profile', [AuthController::class, 'profile']);

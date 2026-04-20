@@ -3,7 +3,7 @@
 
         <!-- Logo -->
         <div class="sidebar-logo">
-            <img src="/images/logo.png" alt="Site Logo" />
+            <img src="/images/logo1.png" class="w-50" alt="Site Logo" />
             <span class="logo-text">Admin</span>
         </div>
 

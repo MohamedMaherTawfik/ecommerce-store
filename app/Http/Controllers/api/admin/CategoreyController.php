@@ -13,156 +13,184 @@ class CategoreyController extends Controller
 {
     use apiResponse;
 
-    // وقت الكاش بالثواني
     private $cacheTime = 600;
 
-    /**
-     * Get paginated categories with caching
-     */
+    // =========================
+    // INDEX
+    // =========================
     public function index()
     {
-        $page = request('page', 1);
-        $cacheKey = "categories_page_{$page}";
+        try {
+            $page = request('page', 1);
 
-        $categories = Cache::remember($cacheKey, $this->cacheTime, function () {
-            return Categories::paginate(6);
-        });
+            $categories = Cache::tags('categories')->remember(
+                "page_$page",
+                $this->cacheTime,
+                fn() => Categories::paginate(6)
+            );
 
-        return $this->apiResponse($categories, 'All Categories');
+            return $this->success($categories, 'All Categories');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load categories', $e);
+        }
     }
 
-    /**
-     * Get all categories with caching
-     */
+    // =========================
+    // ALL
+    // =========================
     public function all()
     {
-        $categories = Cache::remember('all_categories', $this->cacheTime, function () {
-            return Categories::all();
-        });
-        return $this->apiResponse($categories, 'All categories');
+        try {
+            $categories = Cache::tags('categories')->remember(
+                'all',
+                $this->cacheTime,
+                fn() => Categories::all()
+            );
+
+            return $this->success($categories, 'All Categories');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load categories', $e);
+        }
     }
 
-    /**
-     * Get total count of categories with caching
-     */
+    // =========================
+    // COUNT
+    // =========================
     public function count()
     {
-        $cacheKey = 'categories_count';
+        try {
+            $count = Cache::tags('categories')->remember(
+                'count',
+                $this->cacheTime,
+                fn() => Categories::count()
+            );
 
-        $count = Cache::remember($cacheKey, $this->cacheTime, function () {
-            return Categories::count();
-        });
-
-        return $this->apiResponse($count, 'Categories Count');
+            return $this->success($count, 'Categories Count');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to get categories count', $e);
+        }
     }
 
-    /**
-     * Show single category with caching
-     */
+    // =========================
+    // SHOW
+    // =========================
     public function show()
     {
-        $id = request('id');
-        $cacheKey = "category_{$id}";
+        try {
+            $id = request('id');
 
-        $category = Cache::remember($cacheKey, $this->cacheTime, function () use ($id) {
-            return Categories::find($id);
-        });
+            $category = Cache::tags('categories')->remember(
+                "category_$id",
+                $this->cacheTime,
+                fn() => Categories::with('products')->find($id)
+            );
 
-        if (!$category) {
-            return $this->apiResponse([], 'Category Not Found');
+            if (!$category) {
+                return $this->notFound('Category Not Found');
+            }
+
+            return $this->success($category, 'Category Details');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load category', $e);
         }
-
-        return $this->apiResponse($category, 'Category Details');
     }
 
-    /**
-     * Placeholder for products of a category
-     */
+    // =========================
+    // PRODUCTS
+    // =========================
     public function products()
     {
-        $id = request('id');
-        $categories = Categories::find($id);
-        if (!$categories) {
-            return $this->apiResponse([], 'categories Not Found');
+        try {
+            $id = request('id');
+
+            $category = Categories::find($id);
+
+            if (!$category) {
+                return $this->notFound('Category Not Found');
+            }
+
+            return $this->success($category->products, 'Category Products');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load products', $e);
         }
-        return $this->apiResponse($categories->products, 'categories Products');
     }
-    /**
-     * Create a new category and clear relevant cache
-     */
+
+    // =========================
+    // CREATE
+    // =========================
     public function create(categoreyRequest $request)
     {
         try {
             DB::beginTransaction();
+
             $data = $request->validated();
+
             if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $data['image'] = $file->store('Categories', 'public');
+                $data['image'] = $request->file('image')->store('categories', 'public');
             }
+
             $data['slug'] = $data['name'] . '-' . time();
+
             $category = Categories::create($data);
-            $this->clearCategoryCache($category->id);
+
+            Cache::tags('categories')->flush();
+
             DB::commit();
-            return $this->apiResponse($category, 'Category Created Successfully');
-        } catch (\Throwable $th) {
+
+            return $this->created($category, 'Category Created Successfully');
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return $this->apiResponse([], $th->getMessage());
+            return $this->serverError('Failed to create category', $e);
         }
     }
 
-    /**
-     * Update a category and clear relevant cache
-     */
+    // =========================
+    // UPDATE
+    // =========================
     public function update(Request $request)
     {
-        $id = request('id');
-        $category = Categories::find($id);
+        try {
+            $id = request('id');
 
-        if (!$category) {
-            return $this->apiResponse([], 'Category Not Found');
+            $category = Categories::find($id);
+
+            if (!$category) {
+                return $this->notFound('Category Not Found');
+            }
+
+            $data = $request->all();
+
+            $category->update($data);
+
+            Cache::tags('categories')->flush();
+
+            return $this->success($category, 'Category Updated Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to update category', $e);
         }
-
-        $data = $request->all();
-        $category->update($data);
-
-        // Clear cache
-        $this->clearCategoryCache($id);
-
-        return $this->apiResponse($category, 'Category Updated Successfully');
     }
 
-    /**
-     * Delete a category and clear relevant cache
-     */
+    // =========================
+    // DELETE
+    // =========================
     public function destroy()
     {
-        $id = request('id');
-        $category = Categories::find($id);
+        try {
+            $id = request('id');
 
-        if (!$category) {
-            return $this->apiResponse([], 'Category Not Found');
-        }
+            $category = Categories::find($id);
 
-        $category->delete();
+            if (!$category) {
+                return $this->notFound('Category Not Found');
+            }
 
-        // Clear cache
-        $this->clearCategoryCache($id);
+            $category->delete();
 
-        return $this->apiResponse([], 'Category Deleted Successfully');
-    }
+            Cache::tags('categories')->flush();
 
-    /**
-     * Helper function to clear all relevant cache keys
-     */
-    private function clearCategoryCache($id)
-    {
-        Cache::forget("category_{$id}");
-        Cache::forget('categories_count');
-
-        // Optionally, clear all cached pages
-        $pages = ceil(Categories::count() / 10);
-        for ($i = 1; $i <= $pages; $i++) {
-            Cache::forget("categories_page_{$i}");
+            return $this->success([], 'Category Deleted Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to delete category', $e);
         }
     }
 }

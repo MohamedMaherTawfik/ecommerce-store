@@ -7,81 +7,197 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
     use apiResponse;
+
+    private $cacheTime = 1200;
+
+    // =========================
+    // INDEX (LATEST USERS)
+    // =========================
     public function index()
     {
-        $all = Cache::remember('users_latest_10', 1200, function () {
-            return User::latest()->where('is_active', 1)->take(10)->get();
-        });
+        try {
+            $users = Cache::tags('users')->remember(
+                'users_latest_10',
+                $this->cacheTime,
+                fn() =>
+                User::latest()
+                    ->where('is_active', 1)
+                    ->take(10)
+                    ->get()
+            );
 
-        return $this->apiResponse($all, 'All User');
+            return $this->success($users, 'Latest Users');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load users', $e);
+        }
     }
+
+    // =========================
+    // ALL (PAGINATED)
+    // =========================
     public function all()
     {
-        $cacheKey = 'users_all_page_' . request('page', 1);
-        $all = Cache::remember($cacheKey, 1200, function () {
-            return User::latest()->paginate(20);
-        });
+        try {
+            $page = request('page', 1);
 
-        return $this->apiResponse($all, 'All User');
+            $users = Cache::tags('users')->remember(
+                "users_all_page_$page",
+                $this->cacheTime,
+                fn() => User::latest()->paginate(20)
+            );
+
+            return $this->success($users, 'All Users');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load users', $e);
+        }
     }
+
+    // =========================
+    // COUNT
+    // =========================
     public function count()
     {
-        $all = User::count();
-        return $this->apiResponse($all, 'User Count');
+        try {
+            $count = Cache::tags('users')->remember(
+                'users_count',
+                $this->cacheTime,
+                fn() => User::count()
+            );
+
+            return $this->success($count, 'Users Count');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to get users count', $e);
+        }
     }
 
+    // =========================
+    // SHOW
+    // =========================
     public function show()
     {
-        $user = User::find(request('id'));
-        if (!$user) {
-            return $this->apiResponse([], 'user Not Found');
-        }
-        return $this->apiResponse($user, 'user');
+        try {
+            $id = request('id');
 
+            $user = Cache::tags('users')->remember(
+                "user_$id",
+                $this->cacheTime,
+                fn() => User::find($id)
+            );
+
+            if (!$user) {
+                return $this->notFound('User Not Found');
+            }
+
+            return $this->success($user, 'User Details');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to load user', $e);
+        }
     }
 
+    // =========================
+    // PRODUCTS (placeholder)
+    // =========================
     public function products()
     {
-        return $this->apiResponse([], 'Products');
+        return $this->success([], 'Products');
     }
 
+    // =========================
+    // CREATE
+    // =========================
     public function create(UserRequest $request)
     {
-        $request->validated();
+        try {
+            DB::beginTransaction();
 
-        $user = User::create([
-            'name' => $request['name'] ?? '',
-            'phone' => $request['phone'] ?? '',
-            'email' => $request['email'] ?? '',
-            'password' => $request['password'] ?? '',
-            'slug' => $request['name'] . '-' . time(),
-        ]);
-        return $this->apiResponse($user, 'user Created Successfully');
+            $data = $request->validated();
 
+            $data['password'] = bcrypt($data['password']);
+            $data['slug'] = $data['name'] . '-' . time();
+
+            $user = User::create($data);
+
+            Cache::tags('users')->flush();
+
+            DB::commit();
+
+            return $this->created($user, 'User Created Successfully');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return $this->serverError('Failed to create user', $e);
+        }
     }
 
+    // =========================
+    // UPDATE
+    // =========================
     public function update(Request $request)
     {
-        $data = $request->all();
-        $user = User::find(request('id'));
-        if (!$user) {
-            return $this->apiResponse([], 'user Not Found');
+        try {
+            $id = request('id');
+
+            $user = User::find($id);
+
+            if (!$user) {
+                return $this->notFound('User Not Found');
+            }
+
+            $data = $request->all();
+
+            if (isset($data['password'])) {
+                $data['password'] = bcrypt($data['password']);
+            }
+
+            $user->update($data);
+
+            Cache::tags('users')->flush();
+
+            return $this->success($user, 'User Updated Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to update user', $e);
         }
-        $user->update($data);
-        return $this->apiResponse($user, 'user Updated Successfully');
     }
 
+    // =========================
+    // DELETE
+    // =========================
     public function destroy()
     {
-        $user = User::find(request('id'));
-        if (!$user) {
-            return $this->apiResponse([], 'user Not Found');
+        try {
+            $id = request('id');
+
+            $user = User::find($id);
+
+            if (!$user) {
+                return $this->notFound('User Not Found');
+            }
+
+            $user->delete();
+
+            Cache::tags('users')->flush();
+
+            return $this->success([], 'User Deleted Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to delete user', $e);
         }
-        $user->delete();
-        return $this->apiResponse($user, 'user Deleted Successfully');
+    }
+
+    // =========================
+    // CLEAR CACHE
+    // =========================
+    public function clearCache()
+    {
+        try {
+            Cache::tags('users')->flush();
+
+            return $this->success([], 'Users Cache Cleared Successfully');
+        } catch (\Throwable $e) {
+            return $this->serverError('Failed to clear cache', $e);
+        }
     }
 }

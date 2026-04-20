@@ -63,10 +63,12 @@
                                         <td>{{ user.email }}</td>
                                         <td>{{ user.role }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" @click="editUser(user)">
+                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                @click="handleEditUser(user)">
                                                 Edit
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.id)"
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                @click="handleDeleteUser(user.id)"
                                                 :disabled="deletingUserId === user.id">
                                                 {{ deletingUserId === user.id ? 'Deleting...' : 'Delete' }}
                                             </button>
@@ -116,170 +118,86 @@
 <script setup>
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
-import { toast } from 'vue3-toastify';
+import { toast } from 'vue3-toastify'
 
-// ===== Theme =====
+// ─── Services ─────────────────────────────────────────────────────────────────
+import { getUserCount, getUsers, updateUser, deleteUser } from '@/services/userService'
+import { getProductCount } from '@/services/productService'
+import { getBrandCount } from '@/services/brandService'
+import { getCategoryCount } from '@/services/categoryService'
+
+// ─── State ────────────────────────────────────────────────────────────────────
 const isDark = computed(
     () => document.documentElement.getAttribute('data-theme') === 'dark'
 )
-const productCount = ref(0)
-const users = ref([])
-const loadingUsers = ref(false)
-const deletingUserId = ref(null)
+
 const userCount = ref(0)
 const brandCount = ref(0)
 const categoryCount = ref(0)
+const productCount = ref(0)
 
-const fetchProductCount = async () => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
+const users = ref([])
+const loadingUsers = ref(false)
+const deletingUserId = ref(null)
 
-    try {
-        const res = await axios.get('http://localhost:8000/api/v1/products/products/count', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        if (res.data.success) {
-            productCount.value = res.data.data
-        } else {
-            console.warn('API returned success: false')
-        }
-    } catch (err) {
-        console.error('Failed to fetch products count:', err)
-    }
-}
-
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(async () => {
-    await fetchUserCount()
-    await fetchUsers()
-    await fetchBrandCount()
-    await fetchCategoryCount()
-    await fetchProductCount()
-})
-
-const fetchBrandCount = async () => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
-
-    try {
-        const res = await axios.get('http://localhost:8000/api/v1/brands/brand/count', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-
-        if (res.data.success) {
-            brandCount.value = res.data.data
-        }
-    } catch (err) {
-        console.error('Failed to fetch brand count', err)
-    }
-}
-
-const fetchCategoryCount = async () => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
-
-    try {
-        const res = await axios.get('http://localhost:8000/api/v1/categories/category/count', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-
-        if (res.data.success) {
-            categoryCount.value = res.data.data
-        }
-    } catch (err) {
-        console.error('Failed to fetch category count', err)
-    }
-}
-
-
-const fetchUserCount = async () => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
-
-    try {
-        const res = await axios.get('http://localhost:8000/api/v1/users/User/count', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        if (res.data.success) {
-            userCount.value = res.data.data
-        }
-    } catch (err) {
-        console.error('Failed to fetch user count', err)
-    }
-}
-
-const fetchUsers = async () => {
     loadingUsers.value = true
-    const token = localStorage.getItem('auth_token')
-    if (!token) {
-        console.error('No token found, redirect to login')
-        return
-    }
     try {
-        const res = await axios.get('http://localhost:8000/api/v1/users', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        users.value = res.data.data
+        const [uCount, uList, bCount, cCount, pCount] = await Promise.all([
+            getUserCount(),
+            getUsers(),
+            getBrandCount(),
+            getCategoryCount(),
+            getProductCount(),
+        ])
+        userCount.value = uCount
+        users.value = uList
+        brandCount.value = bCount
+        categoryCount.value = cCount
+        productCount.value = pCount
     } catch (err) {
-        console.error('Failed to fetch users', err)
+        console.error('Dashboard init failed:', err)
+        toast.error('Failed to load dashboard data')
     } finally {
         loadingUsers.value = false
     }
-}
+})
 
-const editUser = async (user) => {
-    const newName = prompt("Enter new name:", user.name)
+// ─── Handlers ─────────────────────────────────────────────────────────────────
+const handleEditUser = async (user) => {
+    const newName = prompt('Enter new name:', user.name)
     if (!newName || newName === user.name) return
 
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
-
     try {
-        const res = await axios.post(`http://localhost:8000/api/v1/users/${user.id}`, {
-            name: newName
-        }, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-
-        if (res.data.success) {
-            toast.success("User updated successfully")
-            const index = users.value.findIndex(u => u.id === user.id)
-            if (index !== -1) {
-                users.value[index].name = newName
-            }
-        }
+        await updateUser(user.id, newName)
+        toast.success('User updated successfully')
+        const index = users.value.findIndex(u => u.id === user.id)
+        if (index !== -1) users.value[index].name = newName
     } catch (err) {
-        console.error('Update failed', err)
-        toast.error("Failed to update user")
+        console.error('Update failed:', err)
+        toast.error('Failed to update user')
     }
 }
 
-const deleteUser = async (id) => {
-    if (!confirm("Are you sure you want to delete this user?")) return
+const handleDeleteUser = async (id) => {
+    if (!confirm('Are you sure you want to delete this user?')) return
 
     deletingUserId.value = id
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
-
     try {
-        const res = await axios.delete(`http://localhost:8000/api/v1/users/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-
-        if (res.data.success) {
-            toast.success("User deleted successfully")
-            users.value = users.value.filter(u => u.id !== id)
-            userCount.value -= 1
-        }
+        await deleteUser(id)
+        toast.success('User deleted successfully')
+        users.value = users.value.filter(u => u.id !== id)
+        userCount.value -= 1
     } catch (err) {
-        console.error('Delete failed', err)
-        toast.error("Failed to delete user")
+        console.error('Delete failed:', err)
+        toast.error('Failed to delete user')
     } finally {
         deletingUserId.value = null
     }
 }
 
-// ===== Cards =====
+// ─── Cards ────────────────────────────────────────────────────────────────────
 const firstRowCards = computed(() => [
     { title: 'Users', count: userCount.value, icon: 'bi-people', themeClass: isDark.value ? 'bg-users-dark' : 'bg-users-light' },
     { title: 'Brands', count: brandCount.value, icon: 'bi-award', themeClass: isDark.value ? 'bg-brands-dark' : 'bg-brands-light' },
@@ -293,7 +211,7 @@ const secondRowCards = computed(() => [
     { title: 'Orders', count: 3, icon: 'bi-cart', themeClass: isDark.value ? 'bg-orders-dark' : 'bg-orders-light' },
 ])
 
-// ===== Dummy Courses =====
+// ─── Dummy Data ───────────────────────────────────────────────────────────────
 const recentCourses = ref([
     { id: 1, title: 'ML Course', teacher: 'Admin', date: '1 week ago' },
     { id: 2, title: 'Physics', teacher: 'Jane Smith', date: '2 weeks ago' },
@@ -418,7 +336,6 @@ const recentCourses = ref([
     --bs-table-hover-bg: rgba(45, 55, 72, 0.6);
 }
 
-/* Icons color in dark mode */
 [data-theme='dark'] .bi {
     opacity: 0.9;
 }

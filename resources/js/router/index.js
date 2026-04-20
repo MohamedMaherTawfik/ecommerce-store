@@ -15,8 +15,14 @@ import addcategorey from "../views/admin/categorey/addcategorey.vue";
 import allProducts from "../views/admin/products/allProducts.vue";
 import addProduct from "../views/admin/products/addProduct.vue";
 import showProduct from "../views/admin/products/showProduct.vue";
+import GoogleCallback from "../views/auth/GoogleCallback.vue";
 
 const routes = [
+    {
+        path: "/auth/callback",
+        component: GoogleCallback,
+        meta: { hideNavbar: true, hideFooter: true },
+    },
     {
         path: "/",
         component: Home,
